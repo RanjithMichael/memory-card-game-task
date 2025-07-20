@@ -2,23 +2,172 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Memory Game</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+      text-align: center;
+    }
+
+    header {
+      padding: 20px;
+      background-color: #333;
+      color: white;
+    }
+
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+
+    .card {
+      width: 100px;
+      height: 100px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+    }
+
+    .card-front {
+      background: #ccc;
+    }
+
+    .card-back {
+      background: white;
+      transform: rotateY(180deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-back img {
+      width: 70%;
+    }
+  </style>
 </head>
 <body>
-  <div class="game-container">
-    <header>
-      <h1>Memory Game</h1>
-      <button id="restart">🔄 Restart</button>
-    </header>
+  <header>
+    <h1>Memory Game</h1>
+    <button id="restart">Restart</button>
+  </header>
+  <main>
+    <div id="game-board"></div>
+  </main>
 
-    <div class="game-board" id="game-board">
-      
-    </div>
-  </div>
+  <script>
+    const cards = [
+      { image: "./assets/apple.png", name: "apple" },
+      { image: "./assets/cherries.png", name: "cherries" },
+      { image: "./assets/grapes.png", name: "grapes" },
+      { image: "./assets/lemon.png", name: "lemon" },
+      { image: "./assets/orange.png", name: "orange" },
+      { image: "./assets/pineapple.png", name: "pineapple" },
+      { image: "./assets/strawberry.png", name: "strawberry" },
+      { image: "./assets/pomegranate.png", name: "pomegranate" },
+      { image: "./assets/watermelon.png", name: "watermelon" }
+    ];
 
-  <script src="script.js"></script>
+    const gameBoard = document.getElementById("game-board");
+    const restartBtn = document.getElementById("restart");
+
+    let flippedCards = [];
+    let lockBoard = false;
+
+    function startGame() {
+      gameBoard.innerHTML = "";
+      const duplicated = [...cards, ...cards];
+      const shuffled = shuffle(duplicated);
+
+      shuffled.forEach((symbol) => {
+        const card = createCard(symbol);
+        gameBoard.appendChild(card);
+      });
+    }
+
+    function shuffle(array) {
+      let current = array.length, temp, random;
+      while (current !== 0) {
+        random = Math.floor(Math.random() * current);
+        current--;
+        temp = array[current];
+        array[current] = array[random];
+        array[random] = temp;
+      }
+      return array;
+    }
+
+    function createCard(symbol) {
+      const card = document.createElement("div");
+      card.classList.add("card");
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="card-front"></div>
+          <div class="card-back"><img src="${symbol.image}" alt="${symbol.name}" /></div>
+        </div>
+      `;
+      card.addEventListener("click", () => flipCard(card, symbol.name));
+      return card;
+    }
+
+    function flipCard(card, name) {
+      if (lockBoard || card.classList.contains("matched") || card.classList.contains("flipped")) return;
+
+      card.classList.add("flipped");
+      flippedCards.push({ card, name });
+
+      if (flippedCards.length === 2) {
+        lockBoard = true;
+        setTimeout(checkMatch, 800);
+      }
+    }
+
+    function checkMatch() {
+      const [first, second] = flippedCards;
+
+      if (first.name === second.name) {
+        first.card.classList.add("matched");
+        second.card.classList.add("matched");
+      } else {
+        first.card.classList.remove("flipped");
+        second.card.classList.remove("flipped");
+      }
+
+      flippedCards = [];
+      lockBoard = false;
+    }
+
+    restartBtn.addEventListener("click", startGame);
+
+    startGame();
+  </script>
 </body>
 </html>
-
