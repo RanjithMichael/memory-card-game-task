@@ -1,116 +1,114 @@
-const gridContainer = document.querySelector(".grid-container");
-let cards = [];
-let firstCard, secondCard;
+const cards = [
+{
+        "image": "./assets/apple.png",
+        "name": "apple"
+    },
+    {
+        "image": "./assets/cherries.png",
+        "name": "cherries"
+    },
+    {
+        "image": "./assets/grapes.png",
+        "name": "grapes"
+    },
+    {
+        "image": "./assets/lemon.png",
+        "name": "lemon"
+    },
+    {
+        "image": "./assets/orange.png",
+        "name": "orange"
+    },
+    {
+        "image": "./assets/pineapple.png",
+        "name": "pineapple"
+    },
+    {
+        "image": "./assets/strawberry.png",
+        "name": "strawberry"
+    },
+    {
+        "image": "./assets/pomegranate.png",
+        "name": "pomegranate"
+    },
+    {
+        "image": "./assets/watermelon.png",
+        "name": "watermelon"
+    }
+];
+
+const gameBoard = document.getElementById('game-board');
+const restartBtn = document.getElementById('restart');
+
+let flippedCards = [];
 let lockBoard = false;
-let score = 0;
-let matchedPairs = 0;
 
-document.querySelector(".score").textContent = score;
 
-// Fetch cards.json data
-fetch("./data/cards.json")
-  .then((res) => {
-    if (!res.ok) throw new Error("Failed to load card data.");
-    return res.json();
-  })
-  .then((data) => {
-    cards = [...data, ...data];
-    shuffleCards();
-    generateCards();
-  })
-  .catch((error) => {
-    console.error("Error loading cards:", error);
+function startGame() {
+  gameBoard.innerHTML = "";
+  const shuffled = shuffle([...cards]);
+
+  shuffled.forEach(symbol => {
+    const card = createCard(symbol);
+    gameBoard.appendChild(card);
   });
+}
 
-function shuffleCards() {
-  let currentIndex = cards.length, randomIndex, temporaryValue;
 
-  while (currentIndex !== 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
+function shuffle(array) {
+  let current = array.length, temp, random;
+  while (current !== 0) {
+    random = Math.floor(Math.random() * current);
+    current--;
+    temp = array[current];
+    array[current] = array[random];
+    array[random] = temp;
+  }
+  return array;
+}
 
-    temporaryValue = cards[currentIndex];
-    cards[currentIndex] = cards[randomIndex];
-    cards[randomIndex] = temporaryValue;
+function createCard(symbol) {
+  const card = document.createElement('div');
+  card.classList.add('card');
+  card.innerHTML = `
+    <div class="card-inner">
+      <div class="card-front"></div>
+      <div class="card-back">${symbol}</div>
+    </div>
+  `;
+
+  card.addEventListener('click', () => flipCard(card, symbol));
+  return card;
+}
+
+function flipCard(card, symbol) {
+  if (lockBoard || card.classList.contains('matched') || card.classList.contains('flipped')) return;
+
+  card.classList.add('flipped');
+  flippedCards.push({ card, symbol });
+
+  if (flippedCards.length === 2) {
+    lockBoard = true;
+    setTimeout(checkMatch, 800);
   }
 }
 
-function generateCards() {
-  gridContainer.innerHTML = ""; // clear existing cards
-  for (let card of cards) {
-    const cardElement = document.createElement("div");
-    cardElement.classList.add("card");
-    cardElement.setAttribute("data-name", card.name);
-    cardElement.innerHTML = `
-      <div class="front">
-        <img class="front-image" src="${card.image}" onerror="this.src='fallback.jpg'" />
-      </div>
-      <div class="back"></div>
-    `;
-    gridContainer.appendChild(cardElement);
-    cardElement.addEventListener("click", flipCard);
-  }
-}
+function checkMatch() {
+  const [first, second] = flippedCards;
 
-function flipCard() {
-  if (lockBoard) return;
-  if (this === firstCard) return;
-
-  this.classList.add("flipped");
-
-  if (!firstCard) {
-    firstCard = this;
-    return;
+  if (first.symbol === second.symbol) {
+    first.card.classList.add('matched');
+    second.card.classList.add('matched');
+  } else {
+    first.card.classList.remove('flipped');
+    second.card.classList.remove('flipped');
   }
 
-  secondCard = this;
-  score++;
-  document.querySelector(".score").textContent = score;
-  lockBoard = true;
-
-  checkForMatch();
-}
-
-function checkForMatch() {
-  const isMatch = firstCard.dataset.name === secondCard.dataset.name;
-  isMatch ? disableCards() : unflipCards();
-}
-
-function disableCards() {
-  firstCard.removeEventListener("click", flipCard);
-  secondCard.removeEventListener("click", flipCard);
-  matchedPairs++;
-
-  if (matchedPairs === cards.length / 2) {
-    setTimeout(() => alert("🎉 You won the game!"), 300);
-  }
-
-  resetBoard();
-}
-
-function unflipCards() {
-  setTimeout(() => {
-    firstCard.classList.remove("flipped");
-    secondCard.classList.remove("flipped");
-    resetBoard();
-  }, 1000);
-}
-
-function resetBoard() {
-  firstCard = null;
-  secondCard = null;
+  flippedCards = [];
   lockBoard = false;
 }
 
-// Restart Game
-function restart() {
-  resetBoard();
-  shuffleCards();
-  score = 0;
-  matchedPairs = 0;
-  document.querySelector(".score").textContent = score;
-  generateCards();
-}
+restartBtn.addEventListener('click', startGame);
 
-// Attach restart button
-document.querySelector(".restart-button").addEventListener("click", restart);
+
+startGame();
